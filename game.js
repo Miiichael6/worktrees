@@ -48,6 +48,56 @@ const restartBtn = document.getElementById('restart-btn');
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let holdType, holdUsed;
 let highScore = parseInt(localStorage.getItem('tetris-high-score'), 10) || 0;
+let muted = localStorage.getItem('tetris-muted') === 'true';
+let audioCtx = null;
+
+// ---- Sonido (Web Audio API, sin archivos externos) ----
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, duration, { type = 'square', gain = 0.08, delay = 0, endFreq } = {}) {
+  if (muted) return;
+  const ac = getAudioCtx();
+  if (!ac) return;
+  const t0 = ac.currentTime + delay;
+  const osc = ac.createOscillator();
+  const amp = ac.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t0);
+  if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, t0 + duration);
+  amp.gain.setValueAtTime(gain, t0);
+  amp.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  osc.connect(amp).connect(ac.destination);
+  osc.start(t0);
+  osc.stop(t0 + duration);
+}
+
+function playRotateSound() {
+  playTone(660, 0.06, { gain: 0.05 });
+}
+
+function playLockSound() {
+  playTone(160, 0.1, { type: 'triangle', gain: 0.15, endFreq: 90 });
+}
+
+function playClearSound(cleared) {
+  // Arpegio ascendente: más líneas = más notas
+  const notes = [523, 659, 784, 1047];
+  for (let i = 0; i < cleared; i++)
+    playTone(notes[i], 0.12, { delay: i * 0.07, gain: 0.07 });
+}
+
+function playGameOverSound() {
+  playTone(440, 0.9, { type: 'sawtooth', gain: 0.08, endFreq: 70 });
+  playTone(220, 0.9, { type: 'triangle', gain: 0.1, endFreq: 40, delay: 0.1 });
+}
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -91,6 +141,7 @@ function tryRotate() {
     if (!collide(rotated, current.x + kick, current.y)) {
       current.shape = rotated;
       current.x += kick;
+      playRotateSound();
       return;
     }
   }
@@ -119,7 +170,9 @@ function clearLines() {
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
+    playClearSound(cleared);
   }
+  return cleared;
 }
 
 function ghostY() {
@@ -147,7 +200,7 @@ function softDrop() {
 
 function lockPiece() {
   merge();
-  clearLines();
+  if (!clearLines()) playLockSound();
   holdUsed = false;
   spawn();
 }
@@ -255,6 +308,7 @@ function drawHold() {
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
+  playGameOverSound();
   const isRecord = score > highScore;
   if (isRecord) {
     highScore = score;
@@ -319,6 +373,7 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.code === 'KeyM') { toggleMute(); return; }
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
@@ -371,6 +426,28 @@ themeToggle.addEventListener('click', () => {
   const isLight = !document.body.classList.contains('light-mode');
   applyTheme(isLight);
   localStorage.setItem('tetris-theme', isLight ? 'light' : 'dark');
+});
+
+const soundToggle = document.getElementById('sound-toggle');
+const soundIcon = soundToggle.querySelector('.toggle-icon');
+const soundLabel = soundToggle.querySelector('.toggle-label');
+
+function applyMute() {
+  soundIcon.textContent = muted ? '🔇' : '🔊';
+  soundLabel.textContent = muted ? 'OFF' : 'ON';
+  soundToggle.classList.toggle('muted', muted);
+}
+
+function toggleMute() {
+  muted = !muted;
+  localStorage.setItem('tetris-muted', muted);
+  applyMute();
+}
+
+applyMute();
+soundToggle.addEventListener('click', () => {
+  toggleMute();
+  soundToggle.blur();
 });
 
 init();
