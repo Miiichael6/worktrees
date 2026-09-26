@@ -33,6 +33,8 @@ Three files, no framework, no bundler:
 | Speed | `dropInterval = max(100, 1000 − (level−1) × 90)` ms; level = `floor(lines/10) + 1` |
 | Ghost piece | `ghostY()` — projects current piece down until collision; drawn at `globalAlpha = 0.2` |
 | State flags | `paused`, `gameOver`, `animId` (RAF handle) |
+| Pause menu | `#pause-menu` overlay (P/Esc): `openPauseMenu()`, `resumeGame()`, `pauseMenuKeydown()`; game input blocked while `paused`; after resume the closing key (`ignoredKey`) and repeats within `RESUME_GRACE_MS` are ignored |
+| Start level | `startLevel` from `localStorage('tetris-start-level')` (1–`MAX_START_LEVEL`), applied in `init()`; `level = max(startLevel, floor(lines/10)+1)`; `intervalFor(level)` |
 
 ### Game flow
 
