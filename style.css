@@ -234,3 +234,23 @@ kbd {
 #restart-btn:hover {
   background: #9bbdff;
 }
+
+/* ---- Records ---- */
+.records { font-family: 'Courier New', Courier, monospace; font-size: 12px; min-width: 230px; }
+.records table { width: 100%; border-collapse: collapse; }
+.records th { color: var(--label); padding: 2px 4px; text-align: left; }
+.records td { padding: 2px 4px; text-align: left; }
+.records .num { text-align: right; }
+.records tr.highlight td { color: #ffd54f; background: rgba(255, 213, 79, 0.15); font-weight: 700; }
+body.light-mode .records tr.highlight td { color: #8a5a00; }
+.records .empty { color: var(--controls-text); }
+.records .bests { margin-top: 8px; color: #7aa2f7; }
+.start-title { font-size: 24px; font-weight: 800; letter-spacing: 4px; color: #ffd54f; }
+.name-entry { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.name-entry.hidden { display: none; }
+.records-hint { font-size: 12px; color: #ffd54f; letter-spacing: 1px; }
+body.light-mode .records-hint { color: #8a5a00; }
+#name-input { background: var(--canvas-bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; text-align: center; width: 160px; }
+.rec-btn { background: var(--kbd-bg); color: var(--text); border: 1px solid var(--kbd-border); border-radius: 6px; padding: 6px 16px; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
+.rec-btn.primary { background: #7aa2f7; color: #0f0f17; border: none; padding: 10px 28px; font-size: 14px; }
+.rec-btn.small { font-size: 11px; padding: 4px 10px; }

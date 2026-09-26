@@ -43,6 +43,7 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let combo = 0, maxCombo = 0;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -105,6 +106,8 @@ function clearLines() {
       r++;
     }
   }
+  combo = cleared ? combo + 1 : 0;
+  maxCombo = Math.max(maxCombo, combo);
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
@@ -225,6 +228,7 @@ function endGame() {
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  onGameOverRecords();
   overlay.classList.remove('hidden');
 }
 
@@ -238,6 +242,8 @@ function togglePause() {
     cancelAnimationFrame(animId);
     overlayTitle.textContent = 'PAUSA';
     overlayScore.textContent = '';
+    nameEntry.classList.add('hidden');
+    gameoverRecordsEl.replaceChildren();
     overlay.classList.remove('hidden');
   }
 }
@@ -268,6 +274,8 @@ function init() {
   gameOver = false;
   dropInterval = 1000;
   dropAccum = 0;
+  combo = 0;
+  maxCombo = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
@@ -278,6 +286,8 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLInputElement) return;
+  if (!startOverlay.classList.contains('hidden')) return;
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
@@ -329,4 +339,128 @@ themeToggle.addEventListener('click', () => {
   localStorage.setItem('tetris-theme', isLight ? 'light' : 'dark');
 });
 
-init();
+// ---- Records (localStorage) ----
+const RECORDS_KEY = 'tetris-records';
+const MAX_RECORDS = 5;
+const startOverlay = document.getElementById('start-overlay');
+const startRecordsEl = document.getElementById('start-records');
+const gameoverRecordsEl = document.getElementById('gameover-records');
+const nameEntry = document.getElementById('name-entry');
+const nameInput = document.getElementById('name-input');
+const saveBtn = document.getElementById('save-btn');
+let pendingRecord = null;
+
+function emptyRecords() {
+  return { top: [], bestCombo: 0, maxLines: 0 };
+}
+
+function toNum(v) {
+  return Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
+}
+
+function loadRecords() {
+  try {
+    const data = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    if (!data || typeof data !== 'object' || !Array.isArray(data.top)) return emptyRecords();
+    const top = data.top
+      .filter(r => r && typeof r === 'object' && typeof r.name === 'string')
+      .map(r => ({ name: r.name.slice(0, 12), score: toNum(r.score), lines: toNum(r.lines), level: toNum(r.level), date: typeof r.date === 'string' ? r.date : '' }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, MAX_RECORDS);
+    return { top, bestCombo: toNum(data.bestCombo), maxLines: toNum(data.maxLines) };
+  } catch {
+    return emptyRecords();
+  }
+}
+
+function saveRecords(rec) {
+  try { localStorage.setItem(RECORDS_KEY, JSON.stringify(rec)); } catch { /* storage unavailable */ }
+}
+
+function qualifies(rec, s) {
+  return s > 0 && (rec.top.length < MAX_RECORDS || s > rec.top[rec.top.length - 1].score);
+}
+
+function renderRecords(container, highlightIndex) {
+  const rec = loadRecords();
+  container.replaceChildren();
+  if (!rec.top.length) {
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = 'Sin records todavía';
+    container.appendChild(p);
+  } else {
+    const table = document.createElement('table');
+    const head = table.insertRow();
+    ['#', 'NOMBRE', 'PUNTOS', 'LÍN'].forEach((t, i) => {
+      const th = document.createElement('th');
+      th.textContent = t;
+      if (i >= 2) th.className = 'num';
+      head.appendChild(th);
+    });
+    rec.top.forEach((r, i) => {
+      const row = table.insertRow();
+      if (i === highlightIndex) row.className = 'highlight';
+      [i + 1, r.name, r.score.toLocaleString(), r.lines].forEach((v, j) => {
+        const td = row.insertCell();
+        td.textContent = v;
+        if (j >= 2) td.className = 'num';
+      });
+    });
+    container.appendChild(table);
+  }
+  const bests = document.createElement('p');
+  bests.className = 'bests';
+  bests.textContent = `Mejor combo: ${rec.bestCombo} · Máx. líneas: ${rec.maxLines}`;
+  container.appendChild(bests);
+}
+
+function onGameOverRecords() {
+  const rec = loadRecords();
+  rec.bestCombo = Math.max(rec.bestCombo, maxCombo);
+  rec.maxLines = Math.max(rec.maxLines, lines);
+  saveRecords(rec);
+  if (qualifies(rec, score)) {
+    pendingRecord = { score, lines, level, date: new Date().toISOString().slice(0, 10) };
+    nameInput.value = '';
+    nameEntry.classList.remove('hidden');
+    nameInput.focus();
+  } else {
+    pendingRecord = null;
+    nameEntry.classList.add('hidden');
+  }
+  renderRecords(gameoverRecordsEl, -1);
+}
+
+function savePendingRecord() {
+  if (!pendingRecord) return;
+  const rec = loadRecords();
+  const entry = { name: nameInput.value.trim().slice(0, 12) || 'ANÓNIMO', ...pendingRecord };
+  pendingRecord = null;
+  rec.top.push(entry);
+  rec.top.sort((a, b) => b.score - a.score);
+  rec.top = rec.top.slice(0, MAX_RECORDS);
+  saveRecords(rec);
+  nameEntry.classList.add('hidden');
+  nameInput.blur();
+  renderRecords(gameoverRecordsEl, rec.top.indexOf(entry));
+}
+
+saveBtn.addEventListener('click', savePendingRecord);
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') savePendingRecord();
+});
+
+document.getElementById('play-btn').addEventListener('click', e => {
+  e.currentTarget.blur();
+  startOverlay.classList.add('hidden');
+  init();
+});
+
+document.getElementById('reset-records-btn').addEventListener('click', () => {
+  if (!confirm('¿Borrar todos los records?')) return;
+  try { localStorage.removeItem(RECORDS_KEY); } catch { /* storage unavailable */ }
+  renderRecords(startRecordsEl, -1);
+});
+
+renderRecords(startRecordsEl, -1);

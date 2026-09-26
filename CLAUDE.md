@@ -33,6 +33,9 @@ Three files, no framework, no bundler:
 | Speed | `dropInterval = max(100, 1000 − (level−1) × 90)` ms; level = `floor(lines/10) + 1` |
 | Ghost piece | `ghostY()` — projects current piece down until collision; drawn at `globalAlpha = 0.2` |
 | State flags | `paused`, `gameOver`, `animId` (RAF handle) |
+| Combo | `combo` (consecutive line-clearing locks, reset on a lock that clears none), `maxCombo` per game |
+| Records | `localStorage('tetris-records')` = `{ top:[{name,score,lines,level,date}] (≤5), bestCombo, maxLines }`; `loadRecords()` validates, `renderRecords(el, highlightIdx)` uses textContent; `onGameOverRecords()` shows `#name-entry` if score qualifies |
+| Start screen | `#start-overlay` shows top 5 + Jugar / Resetear records; game starts only on Jugar |
 
 ### Game flow
 
