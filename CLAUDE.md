@@ -34,6 +34,7 @@ Three files, no framework, no bundler:
 | Starting level | `startLevel` (1–10, persisted in `localStorage['tetris-start-level']`, applied on next `init()` as `baseLevel`) |
 | Pause / menu | `togglePause()`, `openMenu()`, `closeMenu()`, `showMenuView('main'\|'controls')`, `handleMenuKey()` (↑↓ navigate, Enter/Space select, ←→ change level), `runMenuAction(action)` |
 | Input lock | While `paused \|\| gameOver` game keys are routed to the menu only; on `closeMenu()` keys still held (`heldKeys`) go to `blockedKeys` and are ignored until their `keyup` |
+| Next preview | `next` piece drawn by `drawNext()` into `#next-canvas` at 24 px/cell; `shapeBounds(shape)` trims empty padding so the filled cells are centered in pixels; redrawn on every `spawn()` and on skin change |
 | Ghost piece | `ghostY()` — projects current piece down until collision; drawn at `globalAlpha = 0.2` |
 | Skins | `SKINS` (`retro`, `neon`, `pastel`, `pixel`) — each has `colors[1..8]`, `boardBg`, `gridColor` (`null` = CSS theme vars) and `drawBlock(ctx, x, y, colorIndex, size, alpha)`; `activeSkin` is used by board, ghost and `drawNext()`; `clearCanvas()` paints the skin background. `applySkin(key)` persists to `localStorage['tetris-skin']` and redraws immediately via `redrawBoard()` (also on start screen / pause / game over). `drawBlock` must reset `globalAlpha`/`shadowBlur`. |
 | State flags | `started`, `paused`, `gameOver`, `animId` (RAF handle), `menuView`, `menuIndex` |

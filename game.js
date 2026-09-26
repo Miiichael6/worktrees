@@ -522,15 +522,32 @@ function draw() {
       drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
 }
 
-function drawNext() {
-  const NB = 30;
-  clearCanvas(nextCtx, nextCanvas);
-  const shape = next.shape;
-  const offX = Math.floor((4 - shape[0].length) / 2);
-  const offY = Math.floor((4 - shape.length) / 2);
+// Bounding box of the filled cells of a shape (ignores empty padding rows/cols)
+function shapeBounds(shape) {
+  let minR = Infinity, maxR = -1, minC = Infinity, maxC = -1;
   for (let r = 0; r < shape.length; r++)
     for (let c = 0; c < shape[r].length; c++)
-      drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
+      if (shape[r][c]) {
+        minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+        minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+      }
+  return { minR, minC, rows: maxR - minR + 1, cols: maxC - minC + 1 };
+}
+
+function drawNext() {
+  const NB = 24; // 4 cells (I piece) = 96px, leaves a margin inside the 120px canvas
+  clearCanvas(nextCtx, nextCanvas);
+  const shape = next.shape;
+  const b = shapeBounds(shape);
+  // center the filled cells in pixels, not in whole grid cells
+  const px = Math.round((nextCanvas.width - b.cols * NB) / 2);
+  const py = Math.round((nextCanvas.height - b.rows * NB) / 2);
+  nextCtx.save();
+  nextCtx.translate(px, py);
+  for (let r = 0; r < b.rows; r++)
+    for (let c = 0; c < b.cols; c++)
+      drawBlock(nextCtx, c, r, shape[b.minR + r][b.minC + c], NB);
+  nextCtx.restore();
 }
 
 // ---- Menú (inicio / pausa / game over) ----
