@@ -29,6 +29,10 @@
           <span class="label">LEVEL</span>
           <span class="value" id="level">1</span>
         </div>
+        <div class="panel-section">
+          <span class="label">COMBO</span>
+          <span class="value" id="combo">0</span>
+        </div>
 
         <div class="panel-section">
           <span class="label">NEXT</span>
@@ -48,11 +52,36 @@
       </aside>
     </div>
 
-    <div id="overlay" class="overlay hidden">
+    <div id="overlay" class="overlay">
       <div class="overlay-box">
-        <p id="overlay-title">GAME OVER</p>
+        <p id="overlay-title">TETRIS</p>
         <p id="overlay-score"></p>
-        <button id="restart-btn">Reiniciar</button>
+
+        <div id="name-entry" class="name-entry hidden">
+          <p id="new-record-msg" class="new-record-msg"></p>
+          <div class="name-row">
+            <input id="name-input" type="text" maxlength="12" placeholder="Tu nombre" autocomplete="off" spellcheck="false" />
+            <button id="save-score-btn" class="secondary-btn">Guardar</button>
+          </div>
+        </div>
+
+        <div id="records" class="records">
+          <span class="label">RÉCORDS</span>
+          <table class="records-table">
+            <thead>
+              <tr><th>#</th><th>NOMBRE</th><th>PUNTOS</th><th>LÍNEAS</th></tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+          </table>
+          <div class="records-stats">
+            <div><span class="label">MEJOR COMBO</span><span class="stat-value" id="best-combo">0</span></div>
+            <div><span class="label">MÁX. LÍNEAS</span><span class="stat-value" id="max-lines">0</span></div>
+          </div>
+        </div>
+
+        <button id="restart-btn">Jugar</button>
+        <p id="start-hint" class="start-hint">o pulsa <kbd>Enter</kbd></p>
+        <button id="reset-records-btn" class="link-btn">Borrar récords</button>
       </div>
     </div>
   </div>
