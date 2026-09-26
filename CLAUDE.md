@@ -15,15 +15,15 @@ python3 -m http.server 8000      # then visit http://localhost:8000
 
 Three files, no framework, no bundler:
 
-- **`index.html`** — DOM structure: `<canvas id="board">` (300×600px) for the playfield, `<canvas id="next-canvas">` (120×120px) for the preview, sidebar HUD (`#score`, `#lines`, `#level`, `#combo`), and a shared overlay `#overlay` for the start screen, PAUSE and GAME OVER. The overlay holds the records table `#records`, name entry `#name-entry`, reset `#reset-records-btn` and a menu with two views: `#menu-main` (Reanudar / Jugar·Reiniciar / Ver controles / Nivel inicial selector) and `#menu-controls` (key list + Volver). Menu entries are `.menu-item`; clickable ones carry `data-action`.
+- **`index.html`** — DOM structure: `<canvas id="board">` (300×600px) for the playfield, `<canvas id="next-canvas">` (120×120px) for the preview, sidebar HUD (`#score`, `#lines`, `#level`, `#combo`), skin `<select id="skin-select">`, and a shared overlay `#overlay` for the start screen, PAUSE and GAME OVER. The overlay holds the records table `#records`, name entry `#name-entry`, reset `#reset-records-btn` and a menu with two views: `#menu-main` (Reanudar / Jugar·Reiniciar / Ver controles / Nivel inicial selector) and `#menu-controls` (key list + Volver). Menu entries are `.menu-item`; clickable ones carry `data-action`.
 - **`style.css`** — Dark/retro arcade theme; uses CSS variables, flexbox, and `backdrop-filter` on overlays.
-- **`game.js`** — All game logic (~700 lines, `'use strict'`, no modules).
+- **`game.js`** — All game logic (~902 lines, `'use strict'`, no modules).
 
 ### game.js internals
 
 | Concern | Key identifiers |
 |---|---|
-| Board state | `board` — `ROWS×COLS` matrix; `0` = empty, `1–7` = piece color index |
+| Board state | `board` — `ROWS×COLS` matrix; `0` = empty, `1–8` = piece color index (8 = N piece) |
 | Piece representation | `{ type, shape, x, y }` where `shape` is a 2-D matrix |
 | Rotation | `rotateCW(shape)` — transpose + reverse; `tryRotate()` applies wall kicks `[0,±1,±2]` |
 | Collision | `collide(shape, ox, oy)` — checks bounds and board occupancy |
@@ -35,6 +35,7 @@ Three files, no framework, no bundler:
 | Pause / menu | `togglePause()`, `openMenu()`, `closeMenu()`, `showMenuView('main'\|'controls')`, `handleMenuKey()` (↑↓ navigate, Enter/Space select, ←→ change level), `runMenuAction(action)` |
 | Input lock | While `paused \|\| gameOver` game keys are routed to the menu only; on `closeMenu()` keys still held (`heldKeys`) go to `blockedKeys` and are ignored until their `keyup` |
 | Ghost piece | `ghostY()` — projects current piece down until collision; drawn at `globalAlpha = 0.2` |
+| Skins | `SKINS` (`retro`, `neon`, `pastel`, `pixel`) — each has `colors[1..8]`, `boardBg`, `gridColor` (`null` = CSS theme vars) and `drawBlock(ctx, x, y, colorIndex, size, alpha)`; `activeSkin` is used by board, ghost and `drawNext()`; `clearCanvas()` paints the skin background. `applySkin(key)` persists to `localStorage['tetris-skin']` and redraws immediately via `redrawBoard()` (also on start screen / pause / game over). `drawBlock` must reset `globalAlpha`/`shadowBlur`. |
 | State flags | `started`, `paused`, `gameOver`, `animId` (RAF handle), `menuView`, `menuIndex` |
 | Combo | `combo` — consecutive locks that clear lines (reset by a lock that clears none); `maxCombo` per game |
 | Records | `localStorage['tetris-records']` = `{ scores:[{name,score,lines}] (top 5), bestCombo, maxLines }`; `loadRecords()`/`saveRecords()` wrap storage in try/catch; `pendingRecord` holds a qualifying score until `commitPendingRecord()` (Enter/Guardar, or auto-saved as "ANÓNIMO" on restart) |
@@ -46,4 +47,4 @@ Three files, no framework, no bundler:
 
 ## Tunable constants (top of game.js)
 
-`COLS` (10), `ROWS` (20), `BLOCK` (30 px), `COLORS` (array indexed 1–7), `LINE_SCORES`, `MIN_START_LEVEL`/`MAX_START_LEVEL`. If you change `COLS`/`ROWS`/`BLOCK`, update the canvas `width`/`height` attributes in `index.html` to match (`COLS×BLOCK` and `ROWS×BLOCK`).
+`COLS` (10), `ROWS` (20), `BLOCK` (30 px), `LINE_SCORES`, `MIN_START_LEVEL`/`MAX_START_LEVEL`. Piece colors live per skin in `SKINS[*].colors`. If you change `COLS`/`ROWS`/`BLOCK`, update the canvas `width`/`height` attributes in `index.html` to match (`COLS×BLOCK` and `ROWS×BLOCK`).

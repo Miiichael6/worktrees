@@ -165,6 +165,33 @@ body {
   transition: background 0.25s, border-color 0.25s;
 }
 
+/* ---- Skin selector ---- */
+.skin-select {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 5px 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237aa2f7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+}
+
+.skin-select:hover,
+.skin-select:focus {
+  border-color: #7aa2f7;
+  outline: none;
+}
+
 /* ---- Controles ---- */
 .controls ul {
   list-style: none;
