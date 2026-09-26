@@ -34,6 +34,8 @@ const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
 const nextCtx = nextCanvas.getContext('2d');
+const holdCanvas = document.getElementById('hold-canvas');
+const holdCtx = holdCanvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const highScoreEl = document.getElementById('high-score');
 const linesEl = document.getElementById('lines');
@@ -44,6 +46,7 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let holdType, holdUsed;
 let highScore = parseInt(localStorage.getItem('tetris-high-score'), 10) || 0;
 
 function createBoard() {
@@ -51,7 +54,10 @@ function createBoard() {
 }
 
 function randomPiece() {
-  const type = Math.floor(Math.random() * 8) + 1;
+  return createPiece(Math.floor(Math.random() * 8) + 1);
+}
+
+function createPiece(type) {
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
 }
@@ -142,7 +148,22 @@ function softDrop() {
 function lockPiece() {
   merge();
   clearLines();
+  holdUsed = false;
   spawn();
+}
+
+function holdPiece() {
+  if (holdUsed) return;
+  const heldType = holdType;
+  holdType = current.type;
+  holdUsed = true;
+  if (heldType) {
+    current = createPiece(heldType);
+    if (collide(current.shape, current.x, current.y)) endGame();
+  } else {
+    spawn();
+  }
+  drawHold();
 }
 
 function spawn() {
@@ -212,15 +233,23 @@ function draw() {
       drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
 }
 
-function drawNext() {
+function drawPreview(context, shape) {
   const NB = 30;
-  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-  const shape = next.shape;
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+  if (!shape) return;
   const offX = Math.floor((4 - shape[0].length) / 2);
   const offY = Math.floor((4 - shape.length) / 2);
   for (let r = 0; r < shape.length; r++)
     for (let c = 0; c < shape[r].length; c++)
-      drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
+      drawBlock(context, offX + c, offY + r, shape[r][c], NB);
+}
+
+function drawNext() {
+  drawPreview(nextCtx, next.shape);
+}
+
+function drawHold() {
+  drawPreview(holdCtx, holdType ? PIECES[holdType] : null);
 }
 
 function endGame() {
@@ -278,6 +307,9 @@ function init() {
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
+  holdType = null;
+  holdUsed = false;
+  drawHold();
   next = randomPiece();
   spawn();
   updateHUD();
@@ -306,6 +338,9 @@ document.addEventListener('keydown', e => {
     case 'Space':
       e.preventDefault();
       hardDrop();
+      break;
+    case 'KeyC':
+      holdPiece();
       break;
   }
   updateHUD();
