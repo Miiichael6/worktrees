@@ -35,6 +35,7 @@ const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
 const nextCtx = nextCanvas.getContext('2d');
 const scoreEl = document.getElementById('score');
+const highScoreEl = document.getElementById('high-score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
 const overlay = document.getElementById('overlay');
@@ -43,6 +44,7 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let highScore = parseInt(localStorage.getItem('tetris-high-score'), 10) || 0;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -154,6 +156,7 @@ function spawn() {
 
 function updateHUD() {
   scoreEl.textContent = score.toLocaleString();
+  highScoreEl.textContent = highScore.toLocaleString();
   linesEl.textContent = lines;
   levelEl.textContent = level;
 }
@@ -223,8 +226,14 @@ function drawNext() {
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
+  const isRecord = score > highScore;
+  if (isRecord) {
+    highScore = score;
+    localStorage.setItem('tetris-high-score', highScore);
+    updateHUD();
+  }
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}${isRecord ? ' — ¡Nuevo récord!' : ''}`;
   overlay.classList.remove('hidden');
 }
 
