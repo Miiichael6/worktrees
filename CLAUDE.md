@@ -15,9 +15,9 @@ python3 -m http.server 8000      # then visit http://localhost:8000
 
 Three files, no framework, no bundler:
 
-- **`index.html`** — DOM structure: `<canvas id="board">` (300×600px) for the playfield, `<canvas id="next-canvas">` (120×120px) for the preview, sidebar HUD (`#score`, `#lines`, `#level`), and a shared overlay `#overlay` for both PAUSE and GAME OVER states. The overlay holds a menu with two views: `#menu-main` (Reanudar / Reiniciar / Ver controles / Nivel inicial selector) and `#menu-controls` (key list + Volver). Menu entries are `.menu-item`; clickable ones carry `data-action`.
+- **`index.html`** — DOM structure: `<canvas id="board">` (300×600px) for the playfield, `<canvas id="next-canvas">` (120×120px) for the preview, sidebar HUD (`#score`, `#lines`, `#level`, `#combo`), and a shared overlay `#overlay` for the start screen, PAUSE and GAME OVER. The overlay holds the records table `#records`, name entry `#name-entry`, reset `#reset-records-btn` and a menu with two views: `#menu-main` (Reanudar / Jugar·Reiniciar / Ver controles / Nivel inicial selector) and `#menu-controls` (key list + Volver). Menu entries are `.menu-item`; clickable ones carry `data-action`.
 - **`style.css`** — Dark/retro arcade theme; uses CSS variables, flexbox, and `backdrop-filter` on overlays.
-- **`game.js`** — All game logic (~535 lines, `'use strict'`, no modules).
+- **`game.js`** — All game logic (~700 lines, `'use strict'`, no modules).
 
 ### game.js internals
 
@@ -35,11 +35,14 @@ Three files, no framework, no bundler:
 | Pause / menu | `togglePause()`, `openMenu()`, `closeMenu()`, `showMenuView('main'\|'controls')`, `handleMenuKey()` (↑↓ navigate, Enter/Space select, ←→ change level), `runMenuAction(action)` |
 | Input lock | While `paused \|\| gameOver` game keys are routed to the menu only; on `closeMenu()` keys still held (`heldKeys`) go to `blockedKeys` and are ignored until their `keyup` |
 | Ghost piece | `ghostY()` — projects current piece down until collision; drawn at `globalAlpha = 0.2` |
-| State flags | `paused`, `gameOver`, `animId` (RAF handle), `menuView`, `menuIndex` |
+| State flags | `started`, `paused`, `gameOver`, `animId` (RAF handle), `menuView`, `menuIndex` |
+| Combo | `combo` — consecutive locks that clear lines (reset by a lock that clears none); `maxCombo` per game |
+| Records | `localStorage['tetris-records']` = `{ scores:[{name,score,lines}] (top 5), bestCombo, maxLines }`; `loadRecords()`/`saveRecords()` wrap storage in try/catch; `pendingRecord` holds a qualifying score until `commitPendingRecord()` (Enter/Guardar, or auto-saved as "ANÓNIMO" on restart) |
+| Overlay | `openMenu('start'\|'pause'\|'gameover', title, subtitle)` — records + reset shown on start/game over, Reanudar only on pause; `renderRecords()` highlights the current score's row |
 
 ### Game flow
 
-`init()` (also used by Reiniciar; cancels any pending RAF first) → `spawn()` → `startLoop()` (resets `dropAccum`, sets `lastTime = null` so the first frame has dt = 0) → `requestAnimationFrame(loop)`. Each frame: accumulate dt → auto-drop or `lockPiece()` → `draw()`. `lockPiece()` = `merge()` + `clearLines()` + `spawn()`. If `spawn()` immediately collides → `endGame()` (opens the menu without Reanudar). `P`/`Escape` toggle pause; `Escape` first closes the controls sub-view.
+`showStartScreen()` → (Jugar) → `init()` (also used by Reiniciar; commits any pending record and cancels any pending RAF first) → `spawn()` → `startLoop()` (resets `dropAccum`, sets `lastTime = null` so the first frame has dt = 0) → `requestAnimationFrame(loop)`. Each frame: accumulate dt → auto-drop or `lockPiece()` → `draw()`. `lockPiece()` = `merge()` + `clearLines()` + `spawn()`. If `spawn()` immediately collides → `endGame()` (stores best combo / max lines, asks for a name if the score enters the top 5, opens the menu without Reanudar). `P`/`Escape` toggle pause; `Escape` first closes the controls sub-view. Game keys are ignored while an `<input>` has focus.
 
 ## Tunable constants (top of game.js)
 
