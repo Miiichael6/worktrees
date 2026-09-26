@@ -179,6 +179,18 @@ kbd {
   transition: background 0.25s, color 0.25s, border-color 0.25s;
 }
 
+.skin-select {
+  background: var(--kbd-bg);
+  color: var(--kbd-text);
+  border: 1px solid var(--kbd-border);
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
 /* ---- Overlay ---- */
 .overlay {
   position: absolute;
